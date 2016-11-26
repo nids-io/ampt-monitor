@@ -24,7 +24,7 @@ def main():
                         help='configuration file path (default: %(default)s)')
     parser.add_argument('-l', '--loglevel', choices=LOGLEVEL_CHOICES,
                             help='set logging verbosity level '
-                                 '(default: from config file)')
+                                 '(default: "%s" or from config file)' % DEFAULTS['logfile'])
     parser.add_argument('-u', '--user', help='user as which to run ampt-monitor '
                                  '(default: "%s" or from config file)' % DEFAULTS['user'])
     parser.add_argument('-g', '--group', help='group as which to run ampt-monitor '
