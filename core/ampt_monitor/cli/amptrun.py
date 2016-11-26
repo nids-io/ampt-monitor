@@ -1,15 +1,30 @@
 import sys
 import logging
+import argparse
 
 from configobj import ConfigObj
 
 from ..amptmonitor import AmptMonitor
 
 
+DEFAULTS = {
+    'config': '/etc/ampt-monitor.conf',
+}
+LOGLEVEL_CHOICES = ['debug', 'info', 'warning', 'error', 'critical']
+
 logging.basicConfig()
 
 def main():
-    conf = ConfigObj('/etc/ampt-monitor.cnf')
+    description = 'Event log monitor utility for the AMPT passive tools monitor'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-c', '--config', default=DEFAULTS['config'],
+                        help='configuration file path (default: %(default)s)')
+    parser.add_argument('-l', '--loglevel', choices=LOGLEVEL_CHOICES,
+                            help='set logging verbosity level '
+                                 '(default: from config file)')
+    args = parser.parse_args()
+
+    conf = ConfigObj(args.config)
     monitors = []
     types = [conf[a].get('type') for a in conf]
     if 'suri' in types:
@@ -32,12 +47,10 @@ def main():
     monitor = AmptMonitor(
         monitors,
         conf['global']['logfile'],
-        (conf['global'].get("loglevel") or "DEBUG"),
+        (args.loglevel or conf['global'].get('loglevel') or 'warning'),
         conf['global']['url'],
         conf['global']['monitor_id']
     )
 
     monitor.run()
 
-if __name__ == "__main__":
-    main()
