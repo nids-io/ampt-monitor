@@ -2,6 +2,7 @@
 AMPT monitor core
 '''
 
+from builtins import object
 import os
 import pwd
 import grp
@@ -27,7 +28,8 @@ class AmptMonitor(object):
         ch.setFormatter(formatter)
         self.logger.addHandler(ch)
 
-        self.logger.info('logging to {} with loglevel {}'.format(logfile, loglevel))
+        self.logger.info('logging to {logfile} with loglevel {loglevel}'
+                         .format(logfile=logfile, loglevel=loglevel))
         self.monitors = monitors
         self.url = url
         self.monitor_id = monitor_id
@@ -38,7 +40,8 @@ class AmptMonitor(object):
     def run(self):
         self.logger.info('Starting monitors')
         for monitor in self.monitors:
-            self.logger.info('monitor with path {}'.format(monitor.logfile))
+            self.logger.info('monitor with path {logfile}'
+                             .format(logfile=monitor.logfile))
             tailer = multiprocessing.Process(target=self._tail, args=(monitor, ))
             processor = multiprocessing.Process(target=self.ampt_process, args=(monitor, ))
             tailer.start()
