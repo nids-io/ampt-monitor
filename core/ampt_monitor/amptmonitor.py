@@ -14,7 +14,7 @@ import requests
 
 
 class AmptMonitor(object):
-    def __init__(self, monitors, logfile, loglevel, url, monitor_id):
+    def __init__(self, monitors, logfile, loglevel, user, group, url, monitor_id):
         self.logger = logging.getLogger('AmptMonitor')
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -31,6 +31,8 @@ class AmptMonitor(object):
         self.logger.info('logging to {logfile} with loglevel {loglevel}'
                          .format(logfile=logfile, loglevel=loglevel))
         self.monitors = monitors
+        self.user = user
+        self.group = group
         self.url = url
         self.monitor_id = monitor_id
 
@@ -86,14 +88,14 @@ class AmptMonitor(object):
                 else:
                     time.sleep(.1)
 
-    def _drop_privileges(self, uid_name='nobody', gid_name='nogroup'):
+    def _drop_privileges(self):
         '''
         Drop superuser privileges from a thread
         '''
         if os.getuid() != 0:
             return
-        running_uid = pwd.getpwnam(uid_name).pw_uid
-        running_gid = grp.getgrnam(gid_name).gr_gid
+        running_uid = pwd.getpwnam(self.user).pw_uid
+        running_gid = grp.getgrnam(self.group).gr_gid
         os.setgroups([])
         os.setgid(running_gid)
         os.setuid(running_uid)
