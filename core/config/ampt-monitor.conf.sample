@@ -1,0 +1,11 @@
+[global]
+utc_offset = 0
+monitor_id = 1
+logfile = /var/log/ampt-monitor.log
+url = https://ampt.example.com:8443/log/receivedlog/
+
+[mon1]
+utc_offset = 0
+type = suri
+sid = 3900001
+path = /var/log/suricata/eve.json
