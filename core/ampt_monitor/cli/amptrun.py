@@ -26,9 +26,9 @@ def main():
                             help='set logging verbosity level '
                                  '(default: from config file)')
     parser.add_argument('-u', '--user', help='user as which to run ampt-monitor '
-                                 '(default: %s or from config file)' % DEFAULTS['user'])
+                                 '(default: "%s" or from config file)' % DEFAULTS['user'])
     parser.add_argument('-g', '--group', help='group as which to run ampt-monitor '
-                                 '(default: %s from config file)' % DEFAULTS['group'])
+                                 '(default: "%s" or from config file)' % DEFAULTS['group'])
     args = parser.parse_args()
 
     conf = ConfigObj(args.config)
