@@ -9,6 +9,9 @@ from ..amptmonitor import AmptMonitor
 
 DEFAULTS = {
     'config': '/etc/ampt-monitor.conf',
+    'loglevel': 'warning',
+    'user': 'ampt',
+    'group': 'ampt',
 }
 LOGLEVEL_CHOICES = ['debug', 'info', 'warning', 'error', 'critical']
 
@@ -22,6 +25,10 @@ def main():
     parser.add_argument('-l', '--loglevel', choices=LOGLEVEL_CHOICES,
                             help='set logging verbosity level '
                                  '(default: from config file)')
+    parser.add_argument('-u', '--user', help='user as which to run ampt-monitor '
+                                 '(default: "%s" or from config file)' % DEFAULTS['user'])
+    parser.add_argument('-g', '--group', help='group as which to run ampt-monitor '
+                                 '(default: "%s" or from config file)' % DEFAULTS['group'])
     args = parser.parse_args()
 
     conf = ConfigObj(args.config)
@@ -47,7 +54,9 @@ def main():
     monitor = AmptMonitor(
         monitors,
         conf['global']['logfile'],
-        (args.loglevel or conf['global'].get('loglevel') or 'warning'),
+        (args.loglevel or conf['global'].get('loglevel') or DEFAULTS['loglevel']),
+        (args.user or conf['global'].get('user') or DEFAULTS['user']),
+        (args.group or conf['global'].get('group') or DEFAULTS['group']),
         conf['global']['url'],
         conf['global']['monitor_id']
     )
