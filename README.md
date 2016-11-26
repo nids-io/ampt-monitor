@@ -40,6 +40,11 @@ Other AMPT components include:
 
 ## Installation and usage
 
+This repository currently carries projects for the core `ampt-monitor` as well
+as the `suricata` module. Both components should be installed on a Suricata
+IDS sensor or node from which Suricata EVE logs can be accessed. Future
+development will simplify deployment for the monitor.
+
 See the [Wiki][wiki] for further documentation.
 
 
