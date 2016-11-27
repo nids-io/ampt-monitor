@@ -1,6 +1,7 @@
 import sys
 import logging
 import argparse
+import importlib
 
 from configobj import ConfigObj
 
@@ -9,6 +10,7 @@ from ..amptmonitor import AmptMonitor
 
 DEFAULTS = {
     'config': '/etc/ampt-monitor.conf',
+    'monitor_section': 'monitors',
     'loglevel': 'warning',
     'user': 'ampt',
     'group': 'ampt',
@@ -31,35 +33,42 @@ def main():
                                  '(default: "%s" or from config file)' % DEFAULTS['group'])
     args = parser.parse_args()
 
-    conf = ConfigObj(args.config)
-    monitors = []
-    types = [conf[a].get('type') for a in conf]
-    if 'suri' in types:
-        try:
-            from ampt_monitor_suricata.suriamptmonitor import SuriAmptMonitor
-        except:
-            errmsg = 'Suricata module specified in config but module is not installed'
-            sys.exit(errmsg)
+    config = ConfigObj(args.config)
 
-    for monitor in conf:
+    loaded_monitors = []
+
+    conf_monitors = config.as_list(DEFAULTS['monitor_section'])
+    # Extract list of modules from subsections in monitors
+    modules = [item for sublist in conf_monitors for item in sublist]
+
+    # Dynamically load and configure monitor modules 
+    for mod in modules:
+        mod_name = 'ampt_monitor_%s' % mod
+        try:
+            m = importlib.import_module(mod_name)
+        except ImportError as e: No module named ampt_monitor_snort :
+            errmsg = 'Suricata module specified in configuration but module is not installed'
+            sys.exit()
+
+    for monitor in config:
         if monitor == 'global':
             continue
-        settings = conf[monitor]
+        settings = config[monitor]
         if settings['type'] == 'suri':
-            monitors.append(SuriAmptMonitor(
+            loaded_monitors.append(SuriAmptMonitor(
                 int(settings['sid']),
                 settings['path'],
-                (conf['global'].get('utc_offset') or 0)
+                (config['global'].get('utc_offset') or 0)
             ))
-    monitor = AmptMonitor(
-        monitors,
-        conf['global']['logfile'],
-        (args.loglevel or conf['global'].get('loglevel') or DEFAULTS['loglevel']),
-        (args.user or conf['global'].get('user') or DEFAULTS['user']),
-        (args.group or conf['global'].get('group') or DEFAULTS['group']),
-        conf['global']['url'],
-        conf['global']['monitor_id']
+    ampt_monitor = AmptMonitor(
+        loaded_monitors,
+        config['logfile'],
+        (args.loglevel or config.get('loglevel') or DEFAULTS['loglevel']),
+        (args.user or config.get('user') or DEFAULTS['user']),
+        (args.group or config.get('group') or DEFAULTS['group']),
+        config['url'],
+        config['monitor_id']
     )
 
-    monitor.run()
+    ampt_monitor.run()
 
