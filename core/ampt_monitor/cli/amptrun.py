@@ -35,20 +35,25 @@ def main():
 
     config = ConfigObj(args.config)
 
+    # List of loaded and configured monitor modules to pass to AmptMonitor
     loaded_monitors = []
 
-    conf_monitors = config.as_list(DEFAULTS['monitor_section'])
-    # Extract list of modules from subsections in monitors
-    modules = [item for sublist in conf_monitors for item in sublist]
+    # Dictionary of monitor configs
+    conf_monitors = config[DEFAULTS['monitor_section']]
+    # List of monitor modules to load
+    modules = conf_monitors.keys()
 
     # Dynamically load and configure monitor modules 
     for mod in modules:
-        mod_name = 'ampt_monitor_%s' % mod
+        module_name = 'ampt_monitor_%s' % mod
         try:
-            m = importlib.import_module(mod_name)
-        except ImportError as e: No module named ampt_monitor_snort :
-            errmsg = 'Suricata module specified in configuration but module is not installed'
-            sys.exit()
+            m = importlib.import_module(module_name)
+            print('Loaded %s plugin from %s module' % (mod, module_name))
+        except ImportError as e:
+            errmsg = ('Monitor type %s specified in configuration but could '
+                      'not be loaded (error: %s)' % (mod, e))
+            print(errmsg)
+    sys.exit()
 
     for monitor in config:
         if monitor == 'global':

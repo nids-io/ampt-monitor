@@ -14,7 +14,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ampt-monitor-suricata',
-    version='0.2.1',
+    version='0.2.2',
     description='ampt-monitor-suricata, module to read healthcheck alerts from Suricata EVE logs for the AMPT monitor',
     long_description=long_description,
     url='https://github.com/nids-io/ampt-monitor',
@@ -42,4 +42,9 @@ setup(
         'dateutils',
         'ujson'
     ],
+    entry_points={
+        'ampt_monitor.plugin': [
+            'suricata = ampt_monitor_suricata.suriamptmonitor:SuriAmptMonitor',
+        ],
+    },
 )
