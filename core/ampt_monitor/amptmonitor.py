@@ -1,102 +1,135 @@
 '''
 AMPT monitor core
-'''
 
-from builtins import object
+'''
 import os
-import pwd
 import grp
+import pwd
+import sys
 import time
+import socket
 import logging
 import multiprocessing
 
 import requests
+from stevedore import driver
+
+from . import settings
+from . import __application_name__
+from .notify import notify_manager
 
 
-class AmptMonitor(object):
-    def __init__(self, monitors, logfile, loglevel, user, group, url, monitor_id):
-        self.logger = logging.getLogger('AmptMonitor')
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__application_name__)
 
-        fh = logging.FileHandler(logfile)
-        fh.setLevel(loglevel)
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+class AMPTMonitor:
+    def __init__(self, manager_url, monitors={}, user=None, group=None,
+                 verify_cert=True):
+        '''Create new AMPT Monitor instance.
 
-        ch = logging.StreamHandler()
-        ch.setLevel(loglevel)
-        ch.setFormatter(formatter)
-        self.logger.addHandler(ch)
+        :param manager_url: AMPT Manager log receipt URL
+        :param monitors: dictionary containing map of configured monitors
+                         (typically parsed from config file)
+        :param user: user to run as
+        :param group: group to run as
+        :param verify_cert: whether to validate SSL certificate when
+                            connecting to AMPT Manager
+        :return: new AMPT Monitor instance
 
-        self.logger.info('logging to {logfile} with loglevel {loglevel}'
-                         .format(logfile=logfile, loglevel=loglevel))
-        self.monitors = monitors
+        '''
+        self.manager_url = manager_url
+        self.monitors = monitors or None
         self.user = user
         self.group = group
-        self.url = url
-        self.monitor_id = monitor_id
+        self.verify_cert = verify_cert
+        # XXX planning that this should be added into the event data sent to
+        # manager and will be useful to include in logs to identify monitor
+        # node by name
+        self.hostname = socket.getfqdn()
 
-    def _post(self, data):
-        return requests.post(self.url, data=data)
+        # Drop privileges if running as superuser
+        if os.getuid() == 0:
+            logger.debug('dropping privileges...')
+            _drop_privileges(user=self.user, group=self.group)
+
+        running_user = pwd.getpwuid(os.getuid()).pw_name
+        running_group = grp.getgrgid(os.getgid()).gr_name
+        logger.debug('AMPT Monitor initialized as user %s, group %s',
+                         running_user, running_group)
 
     def run(self):
-        self.logger.info('Starting monitors')
-        for monitor in self.monitors:
-            self.logger.info('monitor with path {logfile}'
-                             .format(logfile=monitor.logfile))
-            tailer = multiprocessing.Process(target=self._tail, args=(monitor, ))
-            processor = multiprocessing.Process(target=self.ampt_process, args=(monitor, ))
-            tailer.start()
-            processor.start()
+        'Fork monitor processes and invoke plugins.'
 
-    def ampt_process(self, monitor):
-        self._drop_privileges()
-        while True:
-            data = monitor.process()
-            if data:
-                data['monitor'] = self.monitor_id
-                r = self._post(data)
-                if r.status_code != 200:
-                    self.logger.warning('Non 200 status code')
-                    self.logger.warning(r.status_code)
-                    try:
-                        self.logger.warning(r.text)
-                    except:
-                        self.logger.warning('no text')
+        if self.monitors:
+            # Use a queue to allow monitor plugins to put logs in for the core
+            # to pull out and notify the AMPT Manager. Queue size is not
+            # expected to be important and rate of handling objects should be
+            # low, but we use a limit to give us ability to spot problems where
+            # a queue is for some reason not being emptied.
+            queue = multiprocessing.Queue(settings.QUEUE_MAXSIZE)
 
-    def _tail(self, monitor, pos=None):
-        # get initial position (EOF)
-        if pos is None:
-            with open(monitor.logfile) as logfile:
-                logfile.seek(0, 2)
-                pos = logfile.tell()
+            # List of monitor plugin names to load
+            self.plugins = self.monitors.keys()
 
-        # tail file
-        while True:
-            with open(monitor.logfile) as logfile:
-                logfile.seek(0, 2)
-                eof = logfile.tell()
-                if pos > eof:
-                    self.logger.warning('logfile got shorter, this should not happen')
-                    pos = eof
-                logfile.seek(pos)
-                lines = logfile.readlines()
-                pos = logfile.tell()
-                if lines:
-                    for line in lines:
-                        monitor.queue.put(line.strip())
-                else:
-                    time.sleep(.1)
+            # Dynamically load and configure monitor plugins as stevedore drivers
+            logger.debug('loading monitor plugins from %s namespace',
+                         settings.EP_NAMESPACE)
+            self.loaded_monitors = []
+            for plugin in self.plugins:
+                mgr = driver.DriverManager(
+                    namespace=settings.EP_NAMESPACE,
+                    name=plugin,
+                )
+                self.loaded_monitors.append(mgr)
+                logger.debug('loaded monitor plugin: %s', plugin)
 
-    def _drop_privileges(self):
-        '''
-        Drop superuser privileges from a thread
-        '''
-        if os.getuid() != 0:
-            return
-        running_uid = pwd.getpwnam(self.user).pw_uid
-        running_gid = grp.getgrnam(self.group).gr_gid
-        os.setgroups([])
-        os.setgid(running_gid)
-        os.setuid(running_uid)
+                # Instantiate plugin, passing in shared queue and configuration
+                # dictionary
+                monitor_plugin = mgr.driver(queue=queue, **self.monitors[plugin])
+
+                # Construct plugin subprocess object
+                proc = multiprocessing.Process(
+                           target=monitor_plugin.run,
+                           # XXX need to have this set in the plugin so
+                           # available to use here as attribute of mgr.driver
+                           # instead
+                           name='Plugin[{}]'.format(plugin),
+                       )
+                logger.debug('invoking subprocess for %s plugin as %s',
+                             plugin, proc.name)
+                proc.start()
+
+            logger.debug('completed starting monitor plugin classes: %s',
+                         [m.driver for m in self.loaded_monitors])
+
+            logger.debug('starting message retrieval loop from shared queue')
+            while True:
+                logger.debug('awaiting event messages from monitor plugins...')
+                evt = queue.get()
+                logger.debug('retrieved new log event from monitor plugin')
+
+                # Tag in extra fields to event before sending it on
+                evt.update({
+                    'hostname': self.hostname,
+                })
+                notify_manager(self.manager_url, evt, self.verify_cert)
+
+def _drop_privileges(user, group):
+    '''Drop privileges to execute as non-root user
+
+    :param user: User name
+    :param group: Group
+    :return:
+
+    '''
+    if user is None:
+        user = settings.USER
+    if group is None:
+        group = settings.GROUP
+
+    new_uid = pwd.getpwnam(user).pw_uid
+    new_gid = grp.getgrnam(group).gr_gid
+    os.setgroups([])
+    os.setgid(new_gid)
+    os.setuid(new_uid)
+    os.umask(0o077)
 

@@ -1,79 +1,99 @@
+'''
+AMPT Monitor command line interface
+
+'''
 import sys
 import logging
 import argparse
-import importlib
 
 from configobj import ConfigObj
 
-from ..amptmonitor import AmptMonitor
+from . import settings
+from . import __application_name__
+from . import __version__ as ampt_mon_version
+from .amptmonitor import AMPTMonitor
 
 
 DEFAULTS = {
     'config': '/etc/ampt-monitor.conf',
     'monitor_section': 'monitors',
     'loglevel': 'warning',
-    'user': 'ampt',
-    'group': 'ampt',
 }
 LOGLEVEL_CHOICES = ['debug', 'info', 'warning', 'error', 'critical']
 
-logging.basicConfig()
+# Setuptools entry point common namespace
+EP_NAMESPACE = 'ampt_monitor.plugin'
+
+logger = logging.getLogger(__application_name__)
 
 def main():
     description = 'Event log monitor utility for the AMPT passive tools monitor'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-c', '--config', default=DEFAULTS['config'],
                         help='configuration file path (default: %(default)s)')
+    parser.add_argument('-o', '--logfile',
+                        help='log to specified file (default: do not log to file)')
     parser.add_argument('-l', '--loglevel', choices=LOGLEVEL_CHOICES,
-                            help='set logging verbosity level '
-                                 '(default: "%s" or from config file)' % DEFAULTS['loglevel'])
-    parser.add_argument('-u', '--user', help='user as which to run ampt-monitor '
-                                 '(default: "%s" or from config file)' % DEFAULTS['user'])
-    parser.add_argument('-g', '--group', help='group as which to run ampt-monitor '
-                                 '(default: "%s" or from config file)' % DEFAULTS['group'])
+                        help=('set logging level to specified verbosity '
+                              '(default: %s)' % DEFAULTS['loglevel']))
+    parser.add_argument('-u', '--user', help='user as which to run program')
+    parser.add_argument('-g', '--group', help='group as which to run program')
+    parser.add_argument('-n', '--no-verify-ssl', action='store_true',
+                        help=('disable certificate verification for connection '
+                              'to AMPT Manager'))
     args = parser.parse_args()
 
     config = ConfigObj(args.config)
 
-    # List of loaded and configured monitor modules to pass to AmptMonitor
-    loaded_monitors = []
+    user = args.user or config.get('user')
+    group = args.group or config.get('group')
+    logfile = args.logfile or config.get('logfile')
+    loglevel = (args.loglevel or config.get('loglevel')
+                or DEFAULTS['loglevel']).upper()
+    try:
+        conf_cert_verification = config.as_bool('disable_cert_verification')
+    except KeyError:
+        conf_cert_verification = False
+    verify_cert = not (args.no_verify_ssl or conf_cert_verification)
+
+    app_formatter = settings.LOG_FORMATTER
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(loglevel)
+    stream_handler.setFormatter(app_formatter)
+    logger.addHandler(stream_handler)
+    logger.setLevel(loglevel)
+
+    if logfile:
+        try:
+            file_formatter = settings.LOG_FORMATTER
+            file_handler = logging.FileHandler(logfile)
+            file_handler.setLevel(loglevel)
+            file_handler.setFormatter(file_formatter)
+            logger.addHandler(file_handler)
+        except OSError as e:
+            msg = 'failure opening log file (%s)'
+            logger.critical(msg, e)
+            sys.exit(1)
+
+    ver_info = 'starting %s %s on Python %s'
+    py_version = '.'.join([str(x) for x in sys.version_info[:3]])
+    logger.info(ver_info, __application_name__, ampt_mon_version, py_version)
+    logger.debug('AMPT Manager SSL certificate verification is %s',
+                 'enabled' if verify_cert else 'disabled')
 
     # Dictionary of monitor configs
-    conf_monitors = config[DEFAULTS['monitor_section']]
-    # List of monitor modules to load
-    modules = conf_monitors.keys()
+    conf_monitors = config.get(DEFAULTS['monitor_section'], {})
+    logger.debug('monitors (conf_monitors) configured as %s', conf_monitors)
 
-    # Dynamically load and configure monitor modules 
-    for mod in modules:
-        module_name = 'ampt_monitor_%s' % mod
-        try:
-            m = importlib.import_module(module_name)
-            print('Loaded %s plugin from %s module' % (mod, module_name))
-        except ImportError as e:
-            errmsg = ('Monitor type %s specified in configuration but could '
-                      'not be loaded (error: %s)' % (mod, e))
-            print(errmsg)
-    sys.exit()
-
-    for monitor in config:
-        if monitor == 'global':
-            continue
-        settings = config[monitor]
-        if settings['type'] == 'suri':
-            loaded_monitors.append(SuriAmptMonitor(
-                int(settings['sid']),
-                settings['path'],
-                (config['global'].get('utc_offset') or 0)
-            ))
-    ampt_monitor = AmptMonitor(
-        loaded_monitors,
-        config['logfile'],
-        (args.loglevel or config.get('loglevel') or DEFAULTS['loglevel']),
-        (args.user or config.get('user') or DEFAULTS['user']),
-        (args.group or config.get('group') or DEFAULTS['group']),
+    logger.debug('loading AMPT Monitor core')
+    ampt_monitor = AMPTMonitor(
         config['url'],
-        config['monitor_id']
+        monitors=conf_monitors,
+        user=user,
+        group=group,
+        verify_cert=verify_cert,
     )
 
+    logger.debug('running AMPT Monitor')
     ampt_monitor.run()
 
