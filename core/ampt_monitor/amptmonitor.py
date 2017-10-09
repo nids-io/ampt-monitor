@@ -7,7 +7,6 @@ import grp
 import pwd
 import sys
 import time
-import socket
 import logging
 import multiprocessing
 
@@ -41,10 +40,6 @@ class AMPTMonitor:
         self.user = user
         self.group = group
         self.verify_cert = verify_cert
-        # XXX planning that this should be added into the event data sent to
-        # manager and will be useful to include in logs to identify monitor
-        # node by name
-        self.hostname = socket.getfqdn()
 
         # Drop privileges if running as superuser
         if os.getuid() == 0:
@@ -89,9 +84,6 @@ class AMPTMonitor:
                 # Construct plugin subprocess object
                 proc = multiprocessing.Process(
                            target=monitor_plugin.run,
-                           # XXX need to have this set in the plugin so
-                           # available to use here as attribute of mgr.driver
-                           # instead
                            name='Plugin[{}]'.format(plugin),
                        )
                 logger.debug('invoking subprocess for %s plugin as %s',
@@ -105,12 +97,7 @@ class AMPTMonitor:
             while True:
                 logger.debug('awaiting event messages from monitor plugins...')
                 evt = queue.get()
-                logger.debug('retrieved new log event from monitor plugin')
-
-                # Tag in extra fields to event before sending it on
-                evt.update({
-                    'hostname': self.hostname,
-                })
+                logger.debug('received new log event from monitor plugin')
                 notify_manager(self.manager_url, evt, self.verify_cert)
 
 def _drop_privileges(user, group):

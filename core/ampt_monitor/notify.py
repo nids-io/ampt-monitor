@@ -19,14 +19,13 @@ def notify_manager(url, evt, verify_cert):
     :return:
 
     '''
-    logger.debug('notifying AMPT Manager of new event log for monitor ID %s...',
+    logger.debug('sending AMPT Manager new event log for monitor ID %s...',
                  evt['monitor'])
     try:
         r = requests.post(url, data=evt, verify=verify_cert)
         r.raise_for_status()
     except requests.exceptions.RequestException as e:
-        logger.error('failure notifying AMPT Manager of new event log: %s',
-                     e)
+        logger.error('failure notifying AMPT Manager of new event log: %s', e)
 
     logger.info('AMPT Manager returned status %s: %s',
                 r.status_code, r.json().get('message'))

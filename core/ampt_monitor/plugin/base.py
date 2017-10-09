@@ -3,6 +3,7 @@ AMPT Monitor plugin base class
 
 '''
 import abc
+import socket
 import logging
 
 from .. import __application_name__                         
@@ -35,11 +36,17 @@ class AMPTPluginBase(abc.ABC):
 
         '''
         self.logger = logging.getLogger(__application_name__)
+        self.queue = queue
 
         self.monitor_id = monitor_id
-        self.queue = queue
+        self.hostname = socket.getfqdn()
         self.rule_id = int(rule_id)
         self.utc_offset = int(utc_offset)
+
+        self.parsed_event = {
+            'monitor': self.monitor_id,
+            'hostname': self.hostname,
+        }
 
     @abc.abstractmethod
     def run():

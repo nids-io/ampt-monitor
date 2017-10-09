@@ -19,6 +19,8 @@ from ampt_monitor.plugin.base import AMPTPluginBase
 
 # Default sleep period between polling logs from file (in seconds)
 LOOP_INTERVAL = 3
+# GID 1 == text rules
+GENERATOR_TEXT_RULE = 1
 
 class SuricataEveAMPTMonitor(AMPTPluginBase):
     '''
@@ -37,11 +39,11 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
     def run(self):
         'Run plugin main loop'
 
-        self.logger.debug('XXX In plugin run() method')
+        self.logger.debug('executing plugin run() method...')
         for eve_log in self._tail_logfile(self.path):
             parsed_event = self._parse_log(eve_log)
             if parsed_event is not None:
-                self.logger.debug('XXX prepared log event for core process: %s',
+                self.logger.debug('parsed log event for core process: %s',
                     parsed_event)
                 self.queue.put(parsed_event)
 
@@ -51,7 +53,7 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
         processing.
 
         '''
-        self.logger.debug('XXX beginning to tail log file (%s)', self.path)
+        self.logger.debug('beginning to tail log file %s', self.path)
         if pos is None:
             with open(self.path) as logfile:
                 logfile.seek(0, 2)
@@ -63,25 +65,31 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
                 logfile.seek(0, 2)
                 eof = logfile.tell()
                 if pos > eof:
-                    self.logger.warning('logfile got shorter, this should not happen')
+                    self.logger.warning('logfile got shorter, this should '
+                                        'not happen')
                     pos = eof
                 logfile.seek(pos)
                 lines = logfile.readlines()
-                self.logger.debug('XXX fetched %s lines from log file', len(lines))
+                if lines:
+                    self.logger.debug('acquired %d new %s from log file',
+                                      len(lines),
+                                      'line' if len(lines) == 1 else 'lines')
                 pos = logfile.tell()
                 if lines:
-                    self.logger.debug('XXX new lines from log file were acquired')
                     for line in lines:
-                        self.logger.debug('XXX processing new line from log file')
-                        # Pre-filter for logs containing the healthcheck rule ID
+                        self.logger.debug('preprocessing new line from '
+                                          'log file')
+                        # Pre-filter for logs containing the healthcheck
+                        # rule ID
                         if str(self.rule_id) in line:
-                            self.logger.debug('XXX found log line with target rule_id %s: %s', self.rule_id, line.strip())
+                            self.logger.debug('log contains target '
+                                              'rule_id %s: %s',
+                                              self.rule_id, line.strip())
                             yield(line.strip())
                 else:
-                    self.logger.debug('XXX no new lines from log file fetched')
+                    self.logger.debug('no new lines acquired from log file')
                     time.sleep(self.interval)
 
-    ### XXX below here original/only contents of process()
     def _parse_log(self, log):
         '''
         Parse received EVE log event into dictionary and return to caller.
@@ -94,36 +102,33 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
             self.logger.warning(msg, e)
             self.logger.debug('faulty input data: %s', str(log))
             return
-        self.logger.debug('XXX log from json: %s', log)
+        self.logger.debug('log data parsed from JSON: %s', log)
         if log['event_type'] != 'alert':
-            # Move on if not an alert event
-            self.logger.debug('XXX bailing cuz event_type is not alert')
-            self.logger.debug('XXX event_type is: %s', log['event_type'])
+            self.logger.debug('skipping non-alert event type (%s)',
+                              log['event_type'])
             return
-        if log['alert']['signature_id'] != self.rule_id:
+        if (log['alert']['signature_id'] != self.rule_id 
+            and log['alert']['signature_id'] != GENERATOR_TEXT_RULE):
+
             # Move on if not healthcheck alert
-            self.logger.debug('XXX bailing cuz signature_id is not %s', self.rule_id)
-            self.logger.debug('XXX log-alert-signature_id is: %s (%s)',
-                              log['alert']['signature_id'],
-                              type(log['alert']['signature_id']))
-            self.logger.debug('XXX self-rule_id is: %s (%s)',
-                              self.rule_id, type(self.rule_id))
+            self.logger.debug('skipping non-healthcheck alert (%s)'
+                              ':'.join([log['alert']['gid'],
+                                        log['alert']['signature_id']]))
             return
 
-        self.logger.debug('XXX preparing event dictionary')
         _timestamp = log['timestamp']
         if self.utc_offset is not None:
             _timestamp = (parser.parse(log['timestamp'])
                          - timedelta(hours=self.utc_offset)).isoformat(timespec='seconds')
-        parsed_event = {
-            'monitor': self.monitor_id,
+        self.parsed_event.update({
             'alert_time': _timestamp,
             'src_addr': log.get('src_ip'),
             'src_port': log.get('src_port'),
             'dest_addr': log.get('dest_ip'),
             'dest_port': log.get('dest_port'),
             'protocol': (log.get('proto') or '').lower(),
-        }
-        self.logger.debug('XXX returning event dictionary: %s', parsed_event)
-        return parsed_event
+        })
+        self.logger.debug('returning event dictionary from parsed log data: %s',
+                          self.parsed_event)
+        return self.parsed_event
 
