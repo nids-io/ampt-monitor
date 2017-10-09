@@ -1,10 +1,12 @@
 '''
-ampt-monitor setup
+AMPT Monitor setup
+
 '''
 
-from setuptools import setup, find_packages
-from codecs import open
 from os import path
+from codecs import open
+from setuptools import setup, find_packages
+
 
 here = path.abspath(path.dirname(__file__))
 
@@ -14,7 +16,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ampt-monitor',
-    version='0.2.3',
+    version='0.2.9',
     description='AMPT-monitor, the core module in application to deliver healthcheck alerts to the AMPT manager',
     long_description=long_description,
     url='https://github.com/nids-io/ampt-monitor',
@@ -29,8 +31,7 @@ setup(
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3',
         'Topic :: Security',
         'Topic :: System :: Networking :: Monitoring',
     ],
@@ -40,12 +41,12 @@ setup(
     zip_safe=False,
     install_requires=[
         'configobj',
-        'future',
         'requests',
+        'stevedore',
     ],
     entry_points={
         'console_scripts': [
-            'ampt-monitor=ampt_monitor.cli.amptrun:main',
+            'ampt-monitor=ampt_monitor.cli:main',
         ],
     },
 )

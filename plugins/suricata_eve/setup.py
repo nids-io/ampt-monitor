@@ -1,7 +1,7 @@
 '''
-ampt-monitor-suricata setup
-'''
+AMPT Monitor plugin for Suricata EVE logs setup
 
+'''
 from setuptools import setup, find_packages
 from codecs import open
 from os import path
@@ -13,9 +13,10 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='ampt-monitor-suricata',
-    version='0.2.1',
-    description='ampt-monitor-suricata, module to read healthcheck alerts from Suricata EVE logs for the AMPT monitor',
+    # Distribution package name should be "ampt-monitor-whatever"
+    name='ampt-monitor-suricata-eve',
+    version='0.2.7',
+    description='ampt-monitor-suricata-eve, module to read healthcheck alerts from Suricata EVE logs for the AMPT monitor',
     long_description=long_description,
     url='https://github.com/nids-io/ampt-monitor',
     author='AMPT Project',
@@ -29,12 +30,11 @@ setup(
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3',
         'Topic :: Security',
         'Topic :: System :: Networking :: Monitoring',
     ],
-    keywords='ampt, ampt-monitor, ampt-monitor-suricata, suricata, a passive network health monitoring tool',
+    keywords='ampt, ampt-monitor, ampt-monitor-suricata-eve, suricata, a passive network health monitoring tool',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
@@ -42,4 +42,16 @@ setup(
         'dateutils',
         'ujson'
     ],
+    # Entry points are key to the plugins system. Plugins are discovered and
+    # loaded as drivers via setuptools entry points. Plugins should use the
+    # specified namespace as the dict key, and the intended name of the plugin
+    # as the entry point name.
+    entry_points={
+        # Namespace
+        'ampt_monitor.plugin': [
+            # Entry point name used as plugin name and used as a subsection
+            # of [monitors] in ampt-manager configuration file
+            'suricata_eve = ampt_monitor_suricata_eve.plugin:SuricataEveAMPTMonitor',
+        ],
+    },
 )

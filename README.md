@@ -27,7 +27,7 @@ ampt-monitor is intended to be modular in design. The core monitor provides
 basic runtime functionality, communication with the AMPT manager, and
 configuration handling. Decoupled modules function as plugins capable of
 reading alert logs or related data for a given sensor technology to extract
-AMPT healthcheck probe alerts. Currently a basic module for the Suricata
+AMPT healthcheck probe alerts. Currently a basic plugin for the Suricata
 EVE format is provided, and other log formats are planned for future
 development.
 
@@ -41,7 +41,7 @@ Other AMPT components include:
 ## Installation and usage
 
 This repository currently carries projects for the core `ampt-monitor` as well
-as the `suricata` module. Both components should be installed on a Suricata
+as the `suricata_eve` plugin. Both components should be installed on a Suricata
 IDS sensor or node from which Suricata EVE logs can be accessed. Future
 development will simplify deployment for the monitor.
 
