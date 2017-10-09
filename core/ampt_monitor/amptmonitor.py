@@ -5,8 +5,6 @@ AMPT monitor core
 import os
 import grp
 import pwd
-import sys
-import time
 import logging
 import multiprocessing
 
