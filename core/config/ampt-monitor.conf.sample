@@ -1,11 +1,15 @@
-[global]
-utc_offset = 0
-monitor_id = 1
+# ampt-monitor configuration
 logfile = /var/log/ampt-monitor.log
-url = https://ampt.example.com:8443/log/receivedlog/
+url = https://127.0.0.1:8443/log/receivedlog/
+user = _ampt
+group = _ampt
+disable_cert_verification = yes
 
-[mon1]
-utc_offset = 0
-type = suri
-sid = 3900001
+[monitors]
+
+[[suricata_eve]]
+monitor_id = 1
+#utc_offset = -7
+rule_id = 3900001
 path = /var/log/suricata/eve.json
+
