@@ -30,9 +30,11 @@ class AMPTPluginBase(abc.ABC):
                            log timestamps prior to returning them to the main
                            AMPT Monitor process. This is necessary in cases
                            that the sensor logs contain timestamps in the
-                           local timezone, if that timezone is not UTC.
-                           Different sensors on the same monitor host may have
-                           differing timezones in effect.
+                           local timezone, if that timezone is not UTC, and no
+                           timezone data to adjust from automatically. This
+                           should not be the case in Suricata. Different
+                           sensors on the same monitor host may have differing
+                           timezones in effect.
 
         '''
         self.logger = logging.getLogger(__application_name__)
@@ -41,7 +43,10 @@ class AMPTPluginBase(abc.ABC):
         self.monitor_id = monitor_id
         self.hostname = socket.getfqdn()
         self.rule_id = int(rule_id)
-        self.utc_offset = int(utc_offset)
+        if utc_offset is not None:
+            self.utc_offset = int(utc_offset)
+        else:
+            self.utc_offset = utc_offset
 
         self.parsed_event = {
             'monitor': self.monitor_id,

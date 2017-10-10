@@ -9,13 +9,16 @@ ruleset.
 '''
 import time
 import logging
-from dateutil import parser
+import dateutil.parser
 from datetime import timedelta
 
+import pytz
 import ujson
 
 from ampt_monitor.plugin.base import AMPTPluginBase
 
+
+UTC = pytz.utc
 
 # Default sleep period between polling logs from file (in seconds)
 LOOP_INTERVAL = 3
@@ -116,10 +119,12 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
                                         log['alert']['signature_id']]))
             return
 
-        _timestamp = log['timestamp']
-        if self.utc_offset is not None:
-            _timestamp = (parser.parse(log['timestamp'])
-                         - timedelta(hours=self.utc_offset)).isoformat(timespec='seconds')
+        # Parse EVE timestamp
+        _timestamp = dateutil.parser.parse(log['timestamp'])
+        # Normalize to UTC and drop TZ info from timestamp
+        _timestamp = _timestamp.astimezone(UTC).replace(tzinfo=None)
+        # Format to ISO 8601 with seconds precision
+        _timestamp = _timestamp.isoformat(timespec='seconds')
         self.parsed_event.update({
             'alert_time': _timestamp,
             'src_addr': log.get('src_ip'),

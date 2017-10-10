@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     # Distribution package name should be "ampt-monitor-whatever"
     name='ampt-monitor-suricata-eve',
-    version='0.2.7',
+    version='0.2.8',
     description='ampt-monitor-suricata-eve, module to read healthcheck alerts from Suricata EVE logs for the AMPT monitor',
     long_description=long_description,
     url='https://github.com/nids-io/ampt-monitor',
@@ -39,7 +39,6 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'dateutils',
         'ujson'
     ],
     # Entry points are key to the plugins system. Plugins are discovered and
