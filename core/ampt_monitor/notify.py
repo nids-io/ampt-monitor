@@ -19,7 +19,13 @@ def notify_manager(url, evt, verify_cert):
     :return:
 
     '''
-    logger.debug('sending AMPT Manager new event log for monitor ID %s...',
+    # XXX If cert validation disabled, squash underlying warnings also. This
+    # is oversilencing so a better approach probably required.
+    if not verify_cert:
+        import urllib3
+        urllib3.disable_warnings()
+
+    logger.info('sending AMPT Manager new event log for monitor ID %s...',
                  evt['monitor'])
     try:
         r = requests.post(url, data=evt, verify=verify_cert)

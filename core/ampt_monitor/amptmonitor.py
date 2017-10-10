@@ -73,7 +73,7 @@ class AMPTMonitor:
                     name=plugin,
                 )
                 self.loaded_monitors.append(mgr)
-                logger.debug('loaded monitor plugin: %s', plugin)
+                logger.info('loaded monitor plugin: %s', plugin)
 
                 # Instantiate plugin, passing in shared queue and configuration
                 # dictionary

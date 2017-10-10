@@ -46,6 +46,8 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
         for eve_log in self._tail_logfile(self.path):
             parsed_event = self._parse_log(eve_log)
             if parsed_event is not None:
+                self.logger.info('extracted new healthcheck log message '
+                                 'from %s', self.path)
                 self.logger.debug('parsed log event for core process: %s',
                     parsed_event)
                 self.queue.put(parsed_event)
