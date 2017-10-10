@@ -32,6 +32,7 @@ def notify_manager(url, evt, verify_cert):
         r.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.error('failure notifying AMPT Manager of new event log: %s', e)
+        return
 
     logger.info('AMPT Manager returned status %s: %s',
                 r.status_code, r.json().get('message'))
