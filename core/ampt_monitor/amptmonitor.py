@@ -43,7 +43,6 @@ class AMPTMonitor:
         if os.getuid() == 0:
             logger.debug('dropping privileges...')
             _drop_privileges(user=self.user, group=self.group)
-
         running_user = pwd.getpwuid(os.getuid()).pw_name
         running_group = grp.getgrgid(os.getgid()).gr_name
         logger.debug('AMPT Monitor initialized as user %s, group %s',
@@ -57,7 +56,7 @@ class AMPTMonitor:
             # to pull out and notify the AMPT Manager. Queue size is not
             # expected to be important and rate of handling objects should be
             # low, but we use a limit to give us ability to spot problems where
-            # a queue is for some reason not being emptied.
+            # the queue is for some reason not being emptied.
             queue = multiprocessing.Queue(settings.QUEUE_MAXSIZE)
 
             # List of monitor plugin names to load
@@ -77,7 +76,8 @@ class AMPTMonitor:
 
                 # Instantiate plugin, passing in shared queue and configuration
                 # dictionary
-                monitor_plugin = mgr.driver(queue=queue, **self.monitors[plugin])
+                monitor_plugin = mgr.driver(queue=queue, plugin_name=plugin,
+                                            **self.monitors[plugin])
 
                 # Construct plugin subprocess object
                 proc = multiprocessing.Process(
