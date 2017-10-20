@@ -112,7 +112,7 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
             self.logger.debug('skipping non-alert event type (%s)',
                               log['event_type'])
             return
-        if (log['alert']['signature_id'] != self.rule_id 
+        if (log['alert']['signature_id'] != self.rule_id
             and log['alert']['signature_id'] != GENERATOR_TEXT_RULE):
 
             # Move on if not healthcheck alert
