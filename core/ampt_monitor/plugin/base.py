@@ -6,7 +6,7 @@ import abc
 import socket
 import logging
 
-from .. import __application_name__                         
+from .. import __application_name__
 
 
 class AMPTPluginBase(abc.ABC):
@@ -42,7 +42,7 @@ class AMPTPluginBase(abc.ABC):
         self.logger = logging.getLogger(__application_name__)
         self.queue = queue
 
-        self.monitor_id = monitor_id
+        self.monitor_id = int(monitor_id)
         self.hostname = socket.getfqdn()
         self.plugin_name = plugin_name
         self.rule_id = int(rule_id)

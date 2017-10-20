@@ -1,6 +1,6 @@
 # ampt-monitor
 
-Sensor alert monitor for the AMPT passive network tools monitor 
+Sensor alert monitor for the AMPT passive network tools monitor
 
 AMPT is a practical framework designed to aid those who operate network IDS
 sensors and similar passive security monitoring systems. A tailored approach

@@ -19,21 +19,24 @@ from .notify import notify_manager
 logger = logging.getLogger(__application_name__)
 
 class AMPTMonitor:
-    def __init__(self, manager_url, monitors={}, user=None, group=None,
-                 verify_cert=True):
+    def __init__(self, manager_url, hmac_params, monitors={}, user=None,
+                 group=None, verify_cert=True):
         '''Create new AMPT Monitor instance.
 
         :param manager_url: AMPT Manager log receipt URL
-        :param monitors: dictionary containing map of configured monitors
-                         (typically parsed from config file)
-        :param user: user to run as
-        :param group: group to run as
+        :param hmac_params: dictionary containing keys for HMAC key and
+                            digest to use
+        :param monitors:    dictionary containing map of configured monitors
+                            (typically parsed from config file)
+        :param user:        user to run as
+        :param group:       group to run as
         :param verify_cert: whether to validate SSL certificate when
                             connecting to AMPT Manager
-        :return: new AMPT Monitor instance
+        :return:            new AMPT Monitor instance
 
         '''
         self.manager_url = manager_url
+        self.hmac_params = hmac_params
         self.monitors = monitors or None
         self.user = user
         self.group = group
@@ -96,7 +99,8 @@ class AMPTMonitor:
                 logger.debug('awaiting event messages from monitor plugins...')
                 evt = queue.get()
                 logger.debug('received new log event from monitor plugin')
-                notify_manager(self.manager_url, evt, self.verify_cert)
+                notify_manager(self.manager_url, evt, self.hmac_params,
+                               self.verify_cert)
 
 def _drop_privileges(user, group):
     '''Drop privileges to execute as non-root user
