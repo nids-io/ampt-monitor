@@ -69,26 +69,29 @@ class AMPTMonitor:
             logger.debug('loading monitor plugins from %s namespace',
                          settings.EP_NAMESPACE)
             self.loaded_monitors = []
-            for plugin in self.plugins:
+            for plugin_name in self.plugins:
                 mgr = driver.DriverManager(
                     namespace=settings.EP_NAMESPACE,
-                    name=plugin,
+                    name=plugin_name,
                 )
                 self.loaded_monitors.append(mgr)
-                logger.info('loaded monitor plugin: %s', plugin)
+                logger.info('loaded monitor plugin: %s', plugin_name)
 
                 # Instantiate plugin, passing in shared queue and configuration
-                # dictionary
-                monitor_plugin = mgr.driver(queue=queue, plugin_name=plugin,
-                                            **self.monitors[plugin])
+                # dictionary.
+                # Extract monitor ID from plugin config
+                monitor_id = self.monitors[plugin_name].pop('monitor_id')
+                monitor_plugin = mgr.driver(monitor_id=monitor_id, queue=queue,
+                                            plugin_name=plugin_name,
+                                            config=self.monitors[plugin_name])
 
                 # Construct plugin subprocess object
                 proc = multiprocessing.Process(
                            target=monitor_plugin.run,
-                           name='Plugin[{}]'.format(plugin),
+                           name='Plugin[{}]'.format(plugin_name),
                        )
                 logger.debug('invoking subprocess for %s plugin as %s',
-                             plugin, proc.name)
+                             plugin_name, proc.name)
                 proc.start()
 
             logger.debug('completed starting monitor plugin classes: %s',
@@ -98,7 +101,8 @@ class AMPTMonitor:
             while True:
                 logger.debug('awaiting event messages from monitor plugins...')
                 evt = queue.get()
-                logger.debug('received new log event from monitor plugin')
+                logger.debug('received new log event from monitor plugin %s',
+                             evt['plugin_name'])
                 notify_manager(self.manager_url, evt, self.hmac_params,
                                self.verify_cert)
 

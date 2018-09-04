@@ -1,21 +1,19 @@
 '''
 AMPT Monitor plugin for Suricata EVE log files.
 
-This plugin reads the Suricata EVE event log (a JSON event format file)
-looking for events related to AMPT healthcheck probes. Events are identified
-using the specified rule_id matching the SID of the AMPT rule in the sensor
-ruleset.
+This plugin reads the Suricata EVE event log looking for events related to
+AMPT healthcheck probes. Events are identified using the specified rule_id
+matching the SID of the AMPT rule in the sensor ruleset.
 
 '''
 import time
-import logging
 import dateutil.parser
 from datetime import timedelta
 
 import pytz
 import ujson
 
-from ampt_monitor.plugin.base import AMPTPluginBase
+from ampt_monitor.plugin.base import AMPTPlugin
 
 
 UTC = pytz.utc
@@ -25,29 +23,24 @@ LOOP_INTERVAL = 3
 # GID 1 == text rules
 GENERATOR_TEXT_RULE = 1
 
-class SuricataEveAMPTMonitor(AMPTPluginBase):
+class SuricataEveAMPTMonitor(AMPTPlugin):
     '''
     AMPT Monitor plugin for Suricata EVE JSON alert logs
 
     '''
-    def __init__(self, path, interval=LOOP_INTERVAL, **kwargs):
-        # Plugin is a file reader, so expects a "path" configuration option to
-        # be passed in
-        self.path = path
-        # Allow configuration to specify an interval at which the file tailer
-        # collects new log lines
-        self.interval = int(interval)
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.interval = int(self.config.get('interval', LOOP_INTERVAL))
 
     def run(self):
         'Run plugin main loop'
 
         self.logger.debug('executing plugin run() method...')
-        for eve_log in self._tail_logfile(self.path):
+        for eve_log in self._tail_logfile(self.config['path']):
             parsed_event = self._parse_log(eve_log)
             if parsed_event is not None:
                 self.logger.info('extracted new healthcheck log message '
-                                 'from %s', self.path)
+                                 'from %s', self.config['path'])
                 self.logger.debug('parsed log event for core process: %s',
                     parsed_event)
                 self.queue.put(parsed_event)
@@ -58,15 +51,15 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
         processing.
 
         '''
-        self.logger.debug('beginning to tail log file %s', self.path)
+        self.logger.debug('beginning to tail log file %s', self.config['path'])
         if pos is None:
-            with open(self.path) as logfile:
+            with open(self.config['path']) as logfile:
                 logfile.seek(0, 2)
                 pos = logfile.tell()
 
         # Tail the logfile
         while True:
-            with open(self.path) as logfile:
+            with open(self.config['path']) as logfile:
                 logfile.seek(0, 2)
                 eof = logfile.tell()
                 if pos > eof:
@@ -86,10 +79,10 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
                                           'log file')
                         # Pre-filter for logs containing the healthcheck
                         # rule ID
-                        if str(self.rule_id) in line:
+                        if str(self.config['rule_id']) in line:
                             self.logger.debug('log contains target '
                                               'rule_id %s: %s',
-                                              self.rule_id, line.strip())
+                                              self.config['rule_id'], line.strip())
                             yield(line.strip())
                 else:
                     self.logger.debug('no new lines acquired from log file')
@@ -112,8 +105,8 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
             self.logger.debug('skipping non-alert event type (%s)',
                               log['event_type'])
             return
-        if (log['alert']['signature_id'] != self.rule_id
-            and log['alert']['signature_id'] != GENERATOR_TEXT_RULE):
+        if (log['alert']['signature_id'] != self.config['rule_id']
+            and log['alert']['gid'] != GENERATOR_TEXT_RULE):
 
             # Move on if not healthcheck alert
             self.logger.debug('skipping non-healthcheck alert (%s)'
@@ -122,13 +115,14 @@ class SuricataEveAMPTMonitor(AMPTPluginBase):
             return
 
         # Parse EVE timestamp
-        _timestamp = dateutil.parser.parse(log['timestamp'])
+        _ts = dateutil.parser.parse(log['timestamp'])
         # Normalize to UTC and drop TZ info from timestamp
-        _timestamp = _timestamp.astimezone(UTC).replace(tzinfo=None)
+        _utc_ts = _ts.astimezone(UTC).replace(tzinfo=None)
         # Format to ISO 8601 with seconds precision
-        _timestamp = _timestamp.isoformat(timespec='seconds')
+        _final_ts = _utc_ts.isoformat(timespec='seconds')
+
         self.parsed_event.update({
-            'alert_time': _timestamp,
+            'alert_time': _final_ts,
             'src_addr': log.get('src_ip'),
             'src_port': log.get('src_port'),
             'dest_addr': log.get('dest_ip'),

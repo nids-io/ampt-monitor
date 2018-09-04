@@ -2,62 +2,54 @@
 AMPT Monitor plugin base class
 
 '''
-import abc
+from abc import ABC, abstractmethod
 import socket
 import logging
 
 from .. import __application_name__
 
 
-class AMPTPluginBase(abc.ABC):
+# Protocol field value to use in case of missing protocol field in logs
+LOG_PROTO_UNSPECIFIED = 'unspecified'
+
+class AMPTPlugin(ABC):
     '''
     Abstract base class for AMPT Monitor plugins.
 
     '''
-
-    def __init__(self, monitor_id, queue, rule_id, plugin_name,
-                 utc_offset=None, **kwargs):
+    def __init__(self, monitor_id, queue, plugin_name, config):
         '''Set up the plugin and provide configuration.
 
         :param monitor_id:  Integer specifying the monitor's ID in the AMPT
                             Manager
         :param queue:       Queue object to load with log events for the parent
                             process
-        :param rule_id:     Integer specifying the health check probe rule ID,
-                            typically the SID of the rule output by the AMPT
-                            Generator
         :param plugin_name: Plugin name as passed in from AMPT Monitor core
-        :param utc_offset:  Signed integer specifying a timezone offset
-                            adjustment from UTC that should be applied to event
-                            log timestamps prior to returning them to the main
-                            AMPT Monitor process. This is necessary in cases
-                            that the sensor logs contain timestamps in the
-                            local timezone, if that timezone is not UTC, and no
-                            timezone data to adjust from automatically. This
-                            should not be the case in Suricata. Different
-                            sensors on the same monitor host may have differing
-                            timezones in effect.
+        :param config:      Plugin configuration dictionary consisting of
+                            remaining options from config file
 
         '''
         self.logger = logging.getLogger(__application_name__)
-        self.queue = queue
 
         self.monitor_id = int(monitor_id)
-        self.hostname = socket.getfqdn()
+        self.queue = queue
         self.plugin_name = plugin_name
-        self.rule_id = int(rule_id)
-        if utc_offset is not None:
-            self.utc_offset = int(utc_offset)
-        else:
-            self.utc_offset = utc_offset
+        self.config = config
+        self.hostname = socket.getfqdn()
 
+        # Prepare skeleton of parsed event using elements sent in every event
+        # back to manager. The plugin extracts and adds additional elements.
         self.parsed_event = {
             'monitor': self.monitor_id,
             'hostname': self.hostname,
             'plugin_name': self.plugin_name,
         }
+        # Setting option in plugin config primes the value expected by the
+        # manager in the event.
+        if self.config.get('no_log_protocol'):
+            self.parsed_event.update({'protocol': LOG_PROTO_UNSPECIFIED})
 
-    @abc.abstractmethod
+    @abstractmethod
     def run():
         '''Run the plugin to start monitor loop.
 
