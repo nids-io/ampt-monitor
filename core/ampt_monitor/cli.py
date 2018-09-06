@@ -30,7 +30,7 @@ def main():
                         help='log to specified file (default: do not log to file)')
     parser.add_argument('-l', '--loglevel', choices=LOGLEVEL_CHOICES,
                         help=('set logging level to specified verbosity '
-                              '(default: %s)' % settings.DEFAULT_LOGLEVEL))
+                              '(default: %s)' % settings.DEFAULT_STREAM_LOGLEVEL))
     parser.add_argument('-u', '--user', help='user as which to run program')
     parser.add_argument('-g', '--group', help='group as which to run program')
     parser.add_argument('-n', '--no-verify-ssl', action='store_true',
@@ -43,8 +43,11 @@ def main():
     user = args.user or config.get('user')
     group = args.group or config.get('group')
     logfile = args.logfile or config.get('logfile')
-    loglevel = (args.loglevel or config.get('loglevel')
-                or settings.DEFAULT_LOGLEVEL).upper()
+    loglevel_stream = (args.loglevel or config.get('loglevel')
+                or settings.DEFAULT_STREAM_LOGLEVEL).upper()
+    loglevel_file = (args.loglevel or config.get('loglevel')
+                or settings.DEFAULT_FILE_LOGLEVEL).upper()
+    # XXX import pudb; pu.db
     try:
         conf_cert_verification = config.as_bool('disable_cert_verification')
     except KeyError:
@@ -53,18 +56,19 @@ def main():
 
     app_formatter = settings.LOG_FORMATTER
     stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(loglevel)
+    stream_handler.setLevel(loglevel_stream)
     stream_handler.setFormatter(app_formatter)
     logger.addHandler(stream_handler)
-    logger.setLevel(loglevel)
+    logger.setLevel(loglevel_stream)
 
     if logfile:
         try:
             file_formatter = settings.LOG_FORMATTER
             file_handler = logging.FileHandler(logfile)
-            file_handler.setLevel(loglevel)
+            file_handler.setLevel(loglevel_file)
             file_handler.setFormatter(file_formatter)
             logger.addHandler(file_handler)
+            logger.setLevel(loglevel_file)
         except OSError as e:
             msg = 'failure opening log file (%s)'
             logger.critical(msg, e)
