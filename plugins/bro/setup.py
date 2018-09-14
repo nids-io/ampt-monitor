@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     # Distribution package name should be "ampt-monitor-whatever"
     name='ampt-monitor-bro',
-    version='0.1.1',
+    version='0.1.2',
     description='ampt-monitor-bro, module to read healthcheck alerts from Bro signature logs for the AMPT monitor',
     long_description=long_description,
     url='https://github.com/nids-io/ampt-monitor',

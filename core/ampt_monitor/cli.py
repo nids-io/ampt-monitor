@@ -9,8 +9,8 @@ import argparse
 from configobj import ConfigObj
 
 from . import settings
+from . import get_ampt_version
 from . import __application_name__
-from . import __version__ as ampt_mon_version
 from .amptmonitor import AMPTMonitor
 
 
@@ -36,7 +36,14 @@ def main():
     parser.add_argument('-n', '--no-verify-ssl', action='store_true',
                         help=('disable certificate verification for connection '
                               'to AMPT Manager'))
+    parser.add_argument('-V', '--version', action='store_true',
+                        help='display version and exit')
     args = parser.parse_args()
+
+    # Handle special case of version output.
+    if args.version:
+        parser.exit(status=0,
+                    message=get_ampt_version(with_plugins=True) + '\n')
 
     config = ConfigObj(args.config)
 
@@ -47,7 +54,6 @@ def main():
                 or settings.DEFAULT_STREAM_LOGLEVEL).upper()
     loglevel_file = (args.loglevel or config.get('loglevel')
                 or settings.DEFAULT_FILE_LOGLEVEL).upper()
-    # XXX import pudb; pu.db
     try:
         conf_cert_verification = config.as_bool('disable_cert_verification')
     except KeyError:
@@ -74,9 +80,9 @@ def main():
             logger.critical(msg, e)
             sys.exit(1)
 
-    ver_info = 'starting %s %s on Python %s'
+    ver_info = 'starting %s on Python %s'
     py_version = '.'.join([str(x) for x in sys.version_info[:3]])
-    logger.info(ver_info, __application_name__, ampt_mon_version, py_version)
+    logger.info(ver_info, get_ampt_version(), py_version)
     logger.debug('AMPT Manager SSL certificate verification is %s',
                  'enabled' if verify_cert else 'disabled')
 

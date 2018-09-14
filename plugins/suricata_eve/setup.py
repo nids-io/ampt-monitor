@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     # Distribution package name should be "ampt-monitor-whatever"
     name='ampt-monitor-suricata-eve',
-    version='0.2.12',
+    version='0.2.13',
     description='ampt-monitor-suricata-eve, module to read healthcheck alerts from Suricata EVE logs for the AMPT monitor',
     long_description=long_description,
     url='https://github.com/nids-io/ampt-monitor',
