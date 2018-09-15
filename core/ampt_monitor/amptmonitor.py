@@ -75,7 +75,7 @@ class AMPTMonitor:
                     name=plugin_name,
                 )
                 self.loaded_monitors.append(mgr)
-                logger.info('loaded monitor plugin: %s', plugin_name)
+                logger.debug('core found monitor plugin: %s', plugin_name)
 
                 # Instantiate plugin, passing in shared queue and configuration
                 # dictionary.
@@ -84,6 +84,9 @@ class AMPTMonitor:
                 monitor_plugin = mgr.driver(monitor_id=monitor_id, queue=queue,
                                             plugin_name=plugin_name,
                                             config=self.monitors[plugin_name])
+                logger.info('loaded monitor plugin: %s %s',
+                            monitor_plugin.plugin_name,
+                            monitor_plugin.version)
 
                 # Construct plugin subprocess object
                 proc = multiprocessing.Process(

@@ -2,9 +2,9 @@
 AMPT Monitor plugin base class
 
 '''
-from abc import ABC, abstractmethod
 import socket
 import logging
+from abc import ABC, abstractmethod
 
 from .. import __application_name__
 
@@ -37,8 +37,9 @@ class AMPTPlugin(ABC):
         self.config = config
         self.hostname = socket.getfqdn()
 
-        # Prepare skeleton of parsed event using elements sent in every event
-        # back to manager. The plugin extracts and adds additional elements.
+        # Prepare skeleton for parsed event dictionary using elements sent in
+        # every event back to manager. The plugin extracts and adds additional
+        # elements.
         self.parsed_event = {
             'monitor': self.monitor_id,
             'hostname': self.hostname,
@@ -48,6 +49,13 @@ class AMPTPlugin(ABC):
         # manager in the event.
         if self.config.get('no_log_protocol'):
             self.parsed_event.update({'protocol': LOG_PROTO_UNSPECIFIED})
+
+    @property
+    def version(self):
+        'Return plugin version from package resource data'
+
+        from pkg_resources import get_distribution
+        return get_distribution(self.__module__.split('.')[0]).version
 
     @abstractmethod
     def run():
