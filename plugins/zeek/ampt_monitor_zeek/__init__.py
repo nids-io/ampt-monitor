@@ -1,5 +1,5 @@
 '''
-AMPT Monitor plugin for Bro signature logs
+AMPT Monitor plugin for Zeek signature logs
 
 '''
 import pkg_resources
@@ -9,4 +9,4 @@ import pkg_resources
 # module/class
 # The class docstring could also be used as the documentation for the plugin
 # and can show config options, etc.
-__version__ = pkg_resources.get_distribution('ampt_monitor_bro').version
+__version__ = pkg_resources.get_distribution('ampt_monitor_zeek').version

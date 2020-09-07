@@ -8,8 +8,9 @@ hmac_key = 7c7665d000b2d297615b47198d0df54c59ceed2de819e5c84a73d4a9f6d254a8
 
 [monitors]
 
-[[bro]]
+[[zeek]]
 monitor_id = 2
 sig_id = ampt-healthcheck
-path = /var/log/bro/signatures.log
+path = /var/log/zeek/signatures.log
+format = plain
 no_log_protocol = true

@@ -1,5 +1,5 @@
 '''
-AMPT Monitor plugin for Bro signature logs setup
+AMPT Monitor plugin for Zeek signature logs setup.
 
 '''
 from setuptools import setup, find_packages
@@ -14,9 +14,9 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     # Distribution package name should be "ampt-monitor-whatever"
-    name='ampt-monitor-bro',
-    version='0.1.2',
-    description='ampt-monitor-bro, module to read healthcheck alerts from Bro signature logs for the AMPT monitor',
+    name='ampt-monitor-zeek',
+    version='0.2.0',
+    description='ampt-monitor-zeek, ampt-monitor-bro, module to read healthcheck alerts from Zeek signature logs for the AMPT monitor',
     long_description=long_description,
     url='https://github.com/nids-io/ampt-monitor',
     author='AMPT Project',
@@ -34,7 +34,7 @@ setup(
         'Topic :: Security',
         'Topic :: System :: Networking :: Monitoring',
     ],
-    keywords='ampt, ampt-monitor, ampt-monitor-bro, bro, a passive network health monitoring tool',
+    keywords='ampt, ampt-monitor, ampt-monitor-zeek, ampt-monitor-bro, zeek, bro, a passive network health monitoring tool',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
@@ -48,7 +48,7 @@ setup(
         'ampt_monitor.plugin': [
             # Entry point name used as plugin name and used as a subsection
             # of [monitors] in ampt-manager configuration file
-            'bro = ampt_monitor_bro.plugin:BroAMPTMonitor',
+            'zeek = ampt_monitor_zeek.plugin:ZeekAMPTMonitor',
         ],
     },
 )
