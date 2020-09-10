@@ -9,10 +9,11 @@ import logging
 import multiprocessing
 
 import requests
-from stevedore import driver
+import stevedore
 
 from . import settings
 from . import __application_name__
+from .exceptions import NoPluginError
 from .notify import notify_manager
 
 
@@ -70,10 +71,14 @@ class AMPTMonitor:
                          settings.EP_NAMESPACE)
             self.loaded_monitors = []
             for plugin_name in self.plugins:
-                mgr = driver.DriverManager(
-                    namespace=settings.EP_NAMESPACE,
-                    name=plugin_name,
-                )
+                try:
+                    mgr = stevedore.driver.DriverManager(
+                        namespace=settings.EP_NAMESPACE,
+                        name=plugin_name,
+                    )
+                except stevedore.exception.NoMatches as e:
+                    logger.error(e)
+                    continue
                 self.loaded_monitors.append(mgr)
                 logger.debug('core found monitor plugin: %s', plugin_name)
 
@@ -96,6 +101,12 @@ class AMPTMonitor:
                 logger.debug('invoking subprocess for %s plugin as %s',
                              plugin_name, proc.name)
                 proc.start()
+
+            if not self.loaded_monitors:
+                plugins = ', '.join(self.plugins)
+                raise NoPluginError('no monitor plugins could be loaded '
+                                    f'(requested in configuration: {plugins})')
+
 
             logger.debug('completed starting monitor plugin classes: %s',
                          [m.driver for m in self.loaded_monitors])

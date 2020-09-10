@@ -2,6 +2,7 @@
 AMPT Monitor command line interface
 
 '''
+import os
 import sys
 import logging
 import argparse
@@ -12,6 +13,7 @@ from . import settings
 from . import get_ampt_version
 from . import __application_name__
 from .amptmonitor import AMPTMonitor
+from .exceptions import AMPTMonitorException
 
 
 LOGLEVEL_CHOICES = ['debug', 'info', 'warning', 'error', 'critical']
@@ -107,5 +109,8 @@ def main():
     )
 
     logger.debug('running AMPT Monitor')
-    ampt_monitor.run()
-
+    try:
+        ampt_monitor.run()
+    except AMPTMonitorException as e:
+        logger.exception(e)
+        parser.exit(status=1)

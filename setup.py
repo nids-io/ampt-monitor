@@ -16,7 +16,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ampt-monitor',
-    version='0.3.5',
+    version='0.3.6',
     description='AMPT-monitor, the core module in application to deliver healthcheck alerts to the AMPT manager',
     long_description=long_description,
     url='https://github.com/nids-io/ampt-monitor',
