@@ -1,6 +1,6 @@
 # ampt-monitor
 
-Sensor alert monitor for the AMPT passive network tools monitor
+Sensor alert reader for the AMPT passive network tools monitor.
 
 AMPT is a practical framework designed to aid those who operate network IDS
 sensors and similar passive security monitoring systems. A tailored approach
@@ -23,13 +23,20 @@ AMPT framework. It runs on network sensors or other hosts that have access to
 event logs for monitored network segments and reports healthcheck alerts to
 the AMPT manager. It is implemented in Python and is simple to deploy.
 
-ampt-monitor is intended to be modular in design. The core monitor provides
-basic runtime functionality, communication with the AMPT manager, and
-configuration handling. Decoupled modules function as plugins capable of
-reading alert logs or related data for a given sensor technology to extract
-AMPT healthcheck probe alerts. Currently a basic plugin for the Suricata
-EVE format is provided, and other log formats are planned for future
-development.
+## Plugins
+ampt-monitor is modular. The core monitor provides basic runtime
+functionality, communication with the AMPT manager, and configuration
+handling. Plugins read alert logs or related data for a given sensor
+technology to extract AMPT healthcheck probe alerts.
+
+ampt-monitor plugins can be found in the nids.io repositories under the
+[ampt-monitor-plugin][ampt_monitor_plugin] topic.
+
+## Installation and usage
+This repository carries the `ampt-monitor` core. This package as well as one
+or more monitor plugins should be installed.
+
+See the [Wiki][wiki] for further documentation.
 
 Other AMPT components include:
 
@@ -37,16 +44,6 @@ Other AMPT components include:
   network tools monitor
 * [ampt-generator][ampt_generator] - Healthcheck packet generator for the
   AMPT passive network tools monitor
-
-## Installation and usage
-
-This repository currently carries projects for the core `ampt-monitor` as well
-as the `suricata_eve` plugin. Both components should be installed on a Suricata
-IDS sensor or node from which Suricata EVE logs can be accessed. Future
-development will simplify deployment for the monitor.
-
-See the [Wiki][wiki] for further documentation.
-
 
 [suricata]: https://suricata-ids.org/
 [snort]: https://www.snort.org/
@@ -57,4 +54,5 @@ See the [Wiki][wiki] for further documentation.
 [ampt_monitor]: https://github.com/nids-io/ampt-monitor
 [ampt]: https://github.com/nids-io/ampt-manager/wiki/AMPT
 [wiki]: https://github.com/nids-io/ampt-monitor/wiki/
+[ampt_monitor_plugin]: https://github.com/search?q=org%3Anids-io+topic%3Aampt-monitor-plugin&type=Repositories
 

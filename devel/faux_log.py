@@ -1,4 +1,4 @@
-#!/usr//bin/env python3
+#!/usr/bin/env python3
 #
 # Helper script to append various types of log entries to a sample monitored
 # file for testing of file reader input plugins. Sample log entries have
