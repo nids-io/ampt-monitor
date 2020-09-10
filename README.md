@@ -32,6 +32,11 @@ technology to extract AMPT healthcheck probe alerts.
 ampt-monitor plugins can be found in the nids.io repositories under the
 [ampt-monitor-plugin][ampt_monitor_plugin] topic.
 
+Currently available plugins from the nids-io project:
+
+* [ampt-monitor-suricata][ampt_monitor_suricata]
+* [ampt-monitor-zeek][ampt_monitor_zeek]
+
 ## Installation and usage
 This repository carries the `ampt-monitor` core. This package as well as one
 or more monitor plugins should be installed.
@@ -55,4 +60,5 @@ Other AMPT components include:
 [ampt]: https://github.com/nids-io/ampt-manager/wiki/AMPT
 [wiki]: https://github.com/nids-io/ampt-monitor/wiki/
 [ampt_monitor_plugin]: https://github.com/search?q=org%3Anids-io+topic%3Aampt-monitor-plugin&type=Repositories
-
+[ampt_monitor_suricata]: https://github.com/nids-io/ampt-monitor-suricata
+[ampt_monitor_zeek]: https://github.com/nids-io/ampt-monitor-zeek
