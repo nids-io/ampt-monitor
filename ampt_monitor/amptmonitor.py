@@ -2,11 +2,11 @@
 AMPT monitor core
 
 '''
-import os
 import grp
-import pwd
 import logging
 import multiprocessing
+import os
+import pwd
 
 import requests
 import stevedore
@@ -112,6 +112,7 @@ class AMPTMonitor:
                          [m.driver for m in self.loaded_monitors])
 
             logger.debug('starting message retrieval loop from shared queue')
+
             while True:
                 logger.debug('awaiting event messages from monitor plugins...')
                 evt = queue.get()
